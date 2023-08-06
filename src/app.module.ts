@@ -22,7 +22,7 @@ import { PrismaModule } from './modules/prisma/prisma.module';
         PostModule,
         PrismaModule,
 
-        ConfigModule.forRoot({envFilePath: '.development.env'}),
+        ConfigModule.forRoot({isGlobal: true, envFilePath: '.env'}),
 
         JwtModule.register({
             global: true, 
@@ -31,10 +31,10 @@ import { PrismaModule } from './modules/prisma/prisma.module';
 
         MailerModule.forRoot({
             transport: {
-                host: 'smtp.sendgrid.net',
+                host: process.env.SENDGRID_HOST,
                 auth: {
-                    user: 'apikey',
-                    pass: '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'
+                    user: process.env.SENDGRID_USER,
+                    pass: process.env.SENDGRID_PASSWORD,
                 }
             }
         })
