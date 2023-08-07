@@ -23,7 +23,7 @@ export class AuthService {
 
 
     // handle validate user
-    async handleValidateUser(email: string, password: string) {
+    async validateUser(email: string, password: string) {
         const user = await this.prismaService.user.findUnique({ where: { email } });
         if (!user) throw new HttpException("Invalid credentials", 400);
 
@@ -34,7 +34,7 @@ export class AuthService {
     }
 
     // register email or phone
-    async handleSignup(email: string) {
+    async signup(email: string) {
         try {
             if (!email) throw new HttpException("Email is required", 400);
             await this.userService.findUserByEmail(email);
@@ -67,7 +67,7 @@ export class AuthService {
     }
 
     // verify otp
-    async handleVerification(email: string, otp: string) {
+    async verifyOtp(email: string, otp: string) {
         if (!email || !otp) throw new HttpException("Email and OTP are required", 400);
 
         const row = await this.prismaService.otp.findFirst({ where: { email } })
@@ -92,7 +92,7 @@ export class AuthService {
 
 
     // create user handler
-    async handleRegisterUser(createUserDto: CreateUserDto) {
+    async createUserProfile(createUserDto: CreateUserDto) {
         const user = await this.prismaService.user.findFirst({
             where: {
                 OR: [{ email: createUserDto.email.toLowerCase() }, { phone: createUserDto.phone }]
@@ -128,9 +128,9 @@ export class AuthService {
     }
 
 
-    // validate user
-    async handleSignIn(loginUserDto: LoginUserDto) {
-        const user = await this.handleValidateUser(loginUserDto.email, loginUserDto.password);
+    // signin
+    async signin(loginUserDto: LoginUserDto) {
+        const user = await this.validateUser(loginUserDto.email, loginUserDto.password);
 
         // generate tokens
         const accessToken = await this.jwtService.signAsync({ id: user.id }, { secret: process.env.JWT_SECRET, expiresIn: "1d" });
@@ -153,7 +153,6 @@ export class AuthService {
             success: true,
             message: "Login successful",
             accessToken,
-            user
         }
     }
 }

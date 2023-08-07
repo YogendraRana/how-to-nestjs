@@ -1,6 +1,9 @@
 import { PostService } from './post.service';
-import { JwtAuthGuard } from '../auth/guards/jwt.guard';
-import { Controller, Get, Param, Post, Delete, Put, UseGuards } from '@nestjs/common';
+import { CreatePostDto } from 'src/dtos/create-post.dto';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { Controller, Get, Param, Post, Delete, UseGuards, UseInterceptors, UploadedFiles, Body, Patch } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { UpdatePostDto } from 'src/dtos/update-post.dto';
 
 @Controller('posts')
 export class PostController {
@@ -8,34 +11,46 @@ export class PostController {
         private readonly postService: PostService,
     ) { }
 
-    // get posts
+    // get all posts
     @Get()
-    @UseGuards(JwtAuthGuard)
-    async handleGetPosts() {
-        return this.postService.handleGetPosts();
+    @UseGuards(AuthGuard('jwt'))
+    async getAllPosts() {
+        return this.postService.getAllPosts();
     }
 
     // get specific post
     @Get(':id')
-    async handleGetPost(@Param('id') postId: string) {
-        return this.postService.handleGetPost(postId);
+    @UseGuards(AuthGuard('jwt'))
+    async getPostById(@Param('id') postId: string) {
+        return this.postService.getPostById(postId);
     }
 
     // create post
     @Post()
-    async handleCreatePost () {
-        return this.postService.handleCreatePost();
+    @UseGuards(AuthGuard('jwt'))
+    @UseInterceptors(FilesInterceptor('images', 10))
+    async createPost(@UploadedFiles() images: Array<Express.Multer.File>, @Body() createPostDto: CreatePostDto) {
+        return this.postService.createPost(images, createPostDto);
     }
 
     // delete post
     @Delete(':id')
-    async handleDeletePost(@Param('id') postId: string) {
-        return this.postService.handleDeletePost(postId);
+    @UseGuards(AuthGuard('jwt'))
+    async deletePost(@Param('id') postId: string) {
+        return this.postService.deletePost(postId);
     }
 
     // update post
-    @Put(':id')
-    async handleUpdatePost(@Param('id') postId: string) {
-        return this.postService.handleUpdatePost(postId);
+    @Patch(':id')
+    @UseGuards(AuthGuard('jwt'))
+    async updatePost(@Param('id') postId: string, @Body() updatePostDto: UpdatePostDto) {
+        return this.postService.updatePost(postId, updatePostDto);
+    }
+
+    // get posts of a user
+    @Get('/user/:id')
+    @UseGuards(AuthGuard('jwt'))
+    async getPostsOfUser(@Param('id') userId: string) {
+        return this.postService.getPostsOfUser(userId);
     }
 }
