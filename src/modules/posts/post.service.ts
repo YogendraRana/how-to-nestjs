@@ -1,15 +1,17 @@
 import axios from 'axios'
 import * as FormData from 'form-data';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreatePostDto } from 'src/dtos/create-post.dto';
-import { UpdatePostDto } from './../../dtos/update-post.dto';
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { CreatePostDto } from 'src/common/dtos/create-post.dto';
+import { UpdatePostDto } from '../../common/dtos/update-post.dto';
+import { UserInterface } from 'src/common/interfaces/user.interface';
 
 @Injectable()
 export class PostService {
     constructor(
         private prismaService: PrismaService,
     ) { }
+
 
     // get all posts
     async getAllPosts() {
@@ -21,9 +23,12 @@ export class PostService {
         }
     }
 
+
     // get specific post
     async getPostById(postId: string) {
         const post = await this.prismaService.post.findUnique({where: {id: postId}});
+        if(!post) throw new NotFoundException('Post not found');
+        
         return {
             success: true,
             message: 'Post fetched successfully',
@@ -31,8 +36,10 @@ export class PostService {
         }
     }
 
+
     // create post
-    async createPost(images: Array<Express.Multer.File>, createPostDto: CreatePostDto) {
+    async createPost(images: Array<Express.Multer.File>, createPostDto: CreatePostDto, user: UserInterface) {
+        createPostDto.userId = createPostDto.userId || user.id;
         createPostDto.images = createPostDto.images || [];
 
         const uploadPromises = images.map(async (image) => {
@@ -60,6 +67,7 @@ export class PostService {
         }
     }
 
+
     // delete post
     async deletePost(postId: string) {
         const post = await this.prismaService.post.findUnique({where: {id: postId}});
@@ -86,6 +94,7 @@ export class PostService {
         }
     }
 
+    
     // update post
     async updatePost(postId: string, updatePostDto: UpdatePostDto) {
         const post = await this.prismaService.post.findUnique({where: {id: postId}});

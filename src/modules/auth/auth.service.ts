@@ -2,14 +2,14 @@ import * as argon2 from 'argon2';
 import { v4 as uuidv4 } from 'uuid';
 import { JwtService } from '@nestjs/jwt';
 import { Injectable } from '@nestjs/common';
-import generateOtp from 'src/util/generateOtp';
+import generateOtp from 'src/common/util/generateOtp';
 import { HttpException } from '@nestjs/common';
 import { UserService } from '../users/user.service';
 import { MailerService } from '@nestjs-modules/mailer';
-import validatePassword from 'src/util/validatePassword';
+import validatePassword from 'src/common/util/validatePassword';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateUserDto } from '../../dtos/create-user.dto';
-import { LoginUserDto } from './../../dtos/login-user.dto';
+import { CreateUserDto } from '../../common/dtos/create-user.dto';
+import { LoginUserDto } from '../../common/dtos/login-user.dto';
 
 @Injectable()
 export class AuthService {

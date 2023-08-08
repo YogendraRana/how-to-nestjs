@@ -14,6 +14,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { PrismaModule } from './modules/prisma/prisma.module';
+import { CommentsModule } from './modules/comments/comments.module';
 
 @Module({
     imports: [
@@ -21,6 +22,7 @@ import { PrismaModule } from './modules/prisma/prisma.module';
         UserModule,
         PostModule,
         PrismaModule,
+        CommentsModule,
 
         ConfigModule.forRoot({isGlobal: true, envFilePath: '.env'}),
 
@@ -37,7 +39,7 @@ import { PrismaModule } from './modules/prisma/prisma.module';
                     pass: process.env.SENDGRID_PASSWORD,
                 }
             }
-        })
+        }),
     ],
     controllers: [AppController],
     providers: [AppService],

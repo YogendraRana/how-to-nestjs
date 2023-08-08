@@ -1,15 +1,18 @@
 import { PostService } from './post.service';
-import { CreatePostDto } from 'src/dtos/create-post.dto';
-import { FilesInterceptor } from '@nestjs/platform-express';
-import { Controller, Get, Param, Post, Delete, UseGuards, UseInterceptors, UploadedFiles, Body, Patch } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { UpdatePostDto } from 'src/dtos/update-post.dto';
+import { User } from 'src/common/decorators/user.decorator';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { CreatePostDto } from 'src/common/dtos/create-post.dto';
+import { UpdatePostDto } from 'src/common/dtos/update-post.dto';
+import { UserInterface } from 'src/common/interfaces/user.interface';
+import { Controller, Get, Param, Post, Delete, UseGuards, UseInterceptors, UploadedFiles, Body, Patch } from '@nestjs/common';
 
 @Controller('posts')
 export class PostController {
     constructor(
         private readonly postService: PostService,
     ) { }
+
 
     // get all posts
     @Get()
@@ -18,6 +21,7 @@ export class PostController {
         return this.postService.getAllPosts();
     }
 
+
     // get specific post
     @Get(':id')
     @UseGuards(AuthGuard('jwt'))
@@ -25,13 +29,15 @@ export class PostController {
         return this.postService.getPostById(postId);
     }
 
+
     // create post
     @Post()
     @UseGuards(AuthGuard('jwt'))
     @UseInterceptors(FilesInterceptor('images', 10))
-    async createPost(@UploadedFiles() images: Array<Express.Multer.File>, @Body() createPostDto: CreatePostDto) {
-        return this.postService.createPost(images, createPostDto);
+    async createPost(@UploadedFiles() images: Array<Express.Multer.File>, @Body() createPostDto: CreatePostDto, @User() user: UserInterface) {
+        return this.postService.createPost(images, createPostDto, user);
     }
+
 
     // delete post
     @Delete(':id')
@@ -40,6 +46,7 @@ export class PostController {
         return this.postService.deletePost(postId);
     }
 
+
     // update post
     @Patch(':id')
     @UseGuards(AuthGuard('jwt'))
@@ -47,6 +54,7 @@ export class PostController {
         return this.postService.updatePost(postId, updatePostDto);
     }
 
+    
     // get posts of a user
     @Get('/user/:id')
     @UseGuards(AuthGuard('jwt'))
