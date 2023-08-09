@@ -17,16 +17,15 @@ enum Gender {
     OTHER
 }
 
-
 model User {
-    id          String    @id @default(cuid())
-    email       String?   @unique
-    phone       String?   @unique
-    name        String?
-    gender      Gender
-    dateOfBirth DateTime? @map("date_of_birth") @db.Date
-    password    String?
-    isPrivate   Boolean   @default(false) @map("is_private")
+    id               String    @id @default(cuid())
+    email            String?   @unique
+    phone            String?   @unique
+    name             String?
+    gender           Gender
+    dateOfBirth      DateTime? @map("date_of_birth") @db.Date
+    password         String?
+    isPrivateAccount Boolean   @default(false) @map("is_private_account")
 
     refreshToken RefreshToken?
     posts        Post[]
@@ -35,7 +34,6 @@ model User {
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @updatedAt @map("updated_at")
 }
-
 
 model Otp {
     id    String  @id @default(cuid())
@@ -47,7 +45,6 @@ model Otp {
     updatedAt DateTime @updatedAt @map("updated_at")
 }
 
-
 model RefreshToken {
     id               String @id @default(cuid())
     refreshTokenHash String @unique @map("refresh_token_hash")
@@ -58,7 +55,6 @@ model RefreshToken {
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @updatedAt @map("updated_at")
 }
-
 
 model Post {
     id       String  @id @default(cuid())
@@ -75,7 +71,6 @@ model Post {
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @updatedAt @map("updated_at")
 }
-
 
 model Comment {
     id      String @id @default(cuid())

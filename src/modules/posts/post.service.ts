@@ -26,9 +26,9 @@ export class PostService {
 
     // get specific post
     async getPostById(postId: string) {
-        const post = await this.prismaService.post.findUnique({where: {id: postId}});
-        if(!post) throw new NotFoundException('Post not found');
-        
+        const post = await this.prismaService.post.findUnique({ where: { id: postId } });
+        if (!post) throw new NotFoundException('Post not found');
+
         return {
             success: true,
             message: 'Post fetched successfully',
@@ -39,7 +39,9 @@ export class PostService {
 
     // create post
     async createPost(images: Array<Express.Multer.File>, createPostDto: CreatePostDto, user: UserInterface) {
-        createPostDto.userId = createPostDto.userId || user.id;
+
+        if (createPostDto.userId !== user.id) throw new NotFoundException('User not found');
+
         createPostDto.images = createPostDto.images || [];
 
         const uploadPromises = images.map(async (image) => {
@@ -70,11 +72,11 @@ export class PostService {
 
     // delete post
     async deletePost(postId: string) {
-        const post = await this.prismaService.post.findUnique({where: {id: postId}});
-        if(!post) throw new NotFoundException('Post not found');
+        const post = await this.prismaService.post.findUnique({ where: { id: postId } });
+        if (!post) throw new NotFoundException('Post not found');
 
         // delete images from cloudflare
-        const deleteImagesPromises = post.images.map(async (image: {url: string, imageId: string}) => {
+        const deleteImagesPromises = post.images.map(async (image: { url: string, imageId: string }) => {
             await axios.delete(`${process.env.CLOUDFLARE_POST_URL}/${image.imageId}`, {
                 headers: {
                     Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
@@ -86,7 +88,7 @@ export class PostService {
         await Promise.all(deleteImagesPromises);
 
         // delete post from database
-        await this.prismaService.post.delete({where: {id: postId}});
+        await this.prismaService.post.delete({ where: { id: postId } });
 
         return {
             success: true,
@@ -94,17 +96,20 @@ export class PostService {
         }
     }
 
-    
+
     // update post
     async updatePost(postId: string, updatePostDto: UpdatePostDto) {
-        const post = await this.prismaService.post.findUnique({where: {id: postId}});
-        if(!post) throw new NotFoundException('Post not found');
+        const post = await this.prismaService.post.findUnique({ where: { id: postId } });
+        if (!post) throw new NotFoundException('Post not found');
 
-        post.caption = updatePostDto.caption || post.caption;
-        post.location = updatePostDto.location || post.location;
-        post.isPublic = updatePostDto.isPublic || post.isPublic;
-
-        await this.prismaService.post.update({where: {id: postId}, data: post});
+        await this.prismaService.post.update({
+            where: { id: postId },
+            data: {
+                caption: updatePostDto.caption || post.caption,
+                location: updatePostDto.location || post.location,
+                isPublic: updatePostDto.isPublic || post.isPublic,
+            }
+        });
 
         return {
             success: true,
@@ -116,8 +121,8 @@ export class PostService {
     // get post of a user
     async getPostsOfUser(userId: string) {
         const posts = await this.prismaService.post.findMany({
-            where: {userId: userId},
-            orderBy: {createdAt: 'desc'},
+            where: { userId: userId },
+            orderBy: { createdAt: 'desc' },
         });
         return {
             success: true,
