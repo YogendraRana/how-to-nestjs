@@ -24,11 +24,11 @@ import { CommentsModule } from './modules/comments/comments.module';
         PrismaModule,
         CommentsModule,
 
-        ConfigModule.forRoot({isGlobal: true, envFilePath: '.env'}),
+        ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
 
         JwtModule.register({
-            global: true, 
-            secret: process.env.JWT_SECRET, 
+            global: true,
+            secret: process.env.JWT_ACCESS_SECRET,
         }),
 
         MailerModule.forRoot({

@@ -1,41 +1,69 @@
-import { Body, Controller, HttpCode, Post, ValidationPipe, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateUserDto } from '../../common/dtos/create-user.dto';
-import { LoginUserDto } from 'src/common/dtos/login-user.dto';
-import { AuthGuard } from '@nestjs/passport';
+import { EmailOtpDto } from './dtos/email-otp';
+import { ApiBody, ApiTags } from '@nestjs/swagger';
+import { SignupDto } from 'src/modules/auth/dtos/signup.dto';
+import { SigninDto } from 'src/modules/auth/dtos/signin.dto';
+import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
+import { VerifyEmailOtpDto } from 'src/modules/auth/dtos/verify-email-otp.dto';
+import { LocalEmailAuthGuard } from './guards/local-email.guard';
 
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
     constructor(
         private readonly authService: AuthService
     ) { }
 
+ 
+    @Post('otp/email')
+    @ApiBody({type: EmailOtpDto})
+    @HttpCode(200)
+    async sendOtp(@Body() emailOtpDto: EmailOtpDto) {
+        return this.authService.sendOtpToEmail(emailOtpDto);
+    }
+
+
+    @Post('otp/email/verify')
+    @ApiBody({type: VerifyEmailOtpDto})
+    @HttpCode(200)
+    async verifyEmailOtp(@Body() verifyEmailOtpDto: VerifyEmailOtpDto) {
+        return this.authService.verifyEmailOtp(verifyEmailOtpDto);
+    }  
+
+
     // signup or register
     @Post('signup')
-    @HttpCode(200)
-    async signup(@Body('email') email: string) {
-        return this.authService.signup(email);
+    @ApiBody({type: SignupDto})
+    async signup(@Body() signupDto: SignupDto) {
+        return this.authService.signup(signupDto)
     }
 
-    // verification
-    @Post('verify-otp')
-    @HttpCode(200)
-    async verifyOtp(@Body('email') email: string, @Body('otp') otp: string) {
-        return this.authService.verifyOtp(email, otp);
-    }
-
-    // create profile or create user
-    @Post('profile')
-    async createProfile(@Body(new ValidationPipe()) createUserDto: CreateUserDto) {
-        return this.authService.createUserProfile(createUserDto)
-    }
 
     // signin or login
     @Post('signin')
-    @UseGuards(AuthGuard('local'))
-    async signin (@Body() loginUserDto: LoginUserDto) {
-        return this.authService.signin(loginUserDto);
+    @ApiBody({type: SigninDto})
+    @UseGuards(LocalEmailAuthGuard)
+    async signin (@Body() signinDto: SigninDto) {
+        return this.authService.signin(signinDto);
     }
 
+
+    // forgot password
+
+
+
+    // reset or update password
+
+
+
+    // change password
+
+
+
+    // logout
+
+
+
+    // refresh token
 }

@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus } from "@nestjs/common";
 
 export default function validatePassword(password: string, confirm_password: string) {
-    if(password !== confirm_password) throw new HttpException("Passwords do not match", HttpStatus.BAD_REQUEST);
+    if (password !== confirm_password) throw new HttpException("Passwords do not match", HttpStatus.BAD_REQUEST);
 
     const requirements = [
         { regex: /.{8,}/, index: 0, message: "Password must be at least 8 characters long" },

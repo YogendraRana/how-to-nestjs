@@ -1,79 +1,60 @@
 import * as argon2 from 'argon2';
-import { v4 as uuidv4 } from 'uuid';
-import { JwtService } from '@nestjs/jwt';
-import { Injectable } from '@nestjs/common';
-import generateOtp from 'src/common/util/generateOtp';
+import { SigninDto } from './dtos/signin.dto';
 import { HttpException } from '@nestjs/common';
+import { EmailOtpDto } from './dtos/email-otp';
 import { UserService } from '../users/user.service';
-import { MailerService } from '@nestjs-modules/mailer';
-import validatePassword from 'src/common/util/validatePassword';
+import generateOtp from 'src/common/util/generateOtp';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateUserDto } from '../../common/dtos/create-user.dto';
-import { LoginUserDto } from '../../common/dtos/login-user.dto';
+import { SignupDto } from 'src/modules/auth/dtos/signup.dto';
+import validatePassword from 'src/common/util/validatePassword';
+import { VerifyEmailOtpDto } from './dtos/verify-email-otp.dto';
+import { TokenService } from 'src/services/token/token.service';
+import { EmailService } from '../../services/email/email.service';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+
 
 @Injectable()
 export class AuthService {
-
     constructor(
-        private jwtService: JwtService,
         private userService: UserService,
+        private tokenService: TokenService,
+        private emailService: EmailService,
         private prismaService: PrismaService,
-        private mailerService: MailerService,
     ) { }
 
 
-    // handle validate user
-    async validateUser(email: string, password: string) {
-        const user = await this.prismaService.user.findUnique({ where: { email } });
-        if (!user) throw new HttpException("Invalid credentials", 400);
+    // send otp
+    async sendOtpToEmail(emailOtpDto: EmailOtpDto) {
+        if (!emailOtpDto.email) throw new HttpException("Email is required", 400);
 
-        const isPasswordValid = await argon2.verify(user.password, password);
-        if (!isPasswordValid) throw new HttpException("Invalid credentials", 400);
+        const user = await this.prismaService.user.findUnique({ where: { email: emailOtpDto.email } });
+        if (user) throw new HttpException(`${emailOtpDto.email} is already registered. Please use another email`, 400);
 
-        return user;
-    }
+        await this.prismaService.otp.deleteMany({ where: { email: emailOtpDto.email } })
+        const otp = generateOtp();
 
-    // register email or phone
-    async signup(email: string) {
-        try {
-            if (!email) throw new HttpException("Email is required", 400);
-            await this.userService.findUserByEmail(email);
-            await this.prismaService.otp.deleteMany({ where: { email } })
-            const otp = generateOtp();
-            const hashedOtp = await argon2.hash(`${otp}`);
-
-            await this.prismaService.otp.create({
-                data: {
-                    email: email,
-                    code: hashedOtp
-                }
-            })
-
-            await this.mailerService.sendMail({
-                to: email,
-                from: "yogendrarana9595@gmail.com",
-                subject: "OTP for registration",
-                text: `Hello, your OTP for registration is ${otp}`,
-            })
-
-            return {
-                success: true,
-                message: `OTP successfully sent to ${email}`
+        await this.prismaService.otp.create({
+            data: {
+                email: emailOtpDto.email,
+                code: otp
             }
+        })
 
-        } catch (err) {
-            throw new HttpException(err.message, err.status);
+        await this.emailService.sendEmail("yogendrarana9595@gmail.com", emailOtpDto.email, "OTP verification", `Your OTP token is ${otp}`);
+
+        return {
+            success: true,
+            message: `OTP successfully sent to ${emailOtpDto.email}`
         }
     }
 
-    // verify otp
-    async verifyOtp(email: string, otp: string) {
-        if (!email || !otp) throw new HttpException("Email and OTP are required", 400);
 
-        const row = await this.prismaService.otp.findFirst({ where: { email } })
-        if (!row) throw new HttpException(`No OTP was sent to ${email}`, 400);
-        const isValidOtp = await argon2.verify(row.code, otp);
-        if (!isValidOtp) throw new HttpException("Invalid OTP", 400);
+    // verify otp
+    async verifyEmailOtp(verifyEmailOtpDto: VerifyEmailOtpDto) {
+        const row = await this.prismaService.otp.findFirst({ where: { email: verifyEmailOtpDto.email } })
+        if (!row) throw new HttpException(`No OTP was sent to ${verifyEmailOtpDto.email}`, 400);
+
+        if (verifyEmailOtpDto.otp !== row.code) throw new HttpException("Invalid OTP", 400);
 
         // check if the otp is expired or not
         const createdDate = new Date(row.createdAt);
@@ -82,7 +63,7 @@ export class AuthService {
         const diff = createdDate.getTime() - currentDate.getTime();
         if (diff > 600000) throw new HttpException("OTP expired", 400);
 
-        await this.prismaService.otp.deleteMany({ where: { email } })
+        await this.prismaService.otp.deleteMany({ where: { email: verifyEmailOtpDto.email } })
 
         return {
             success: true,
@@ -91,52 +72,60 @@ export class AuthService {
     }
 
 
+    // validate user email and password
+    async validateEmail(email: string, password: string) {
+        const user = await this.userService.findUserByEmail(email);
+        if (!user) throw new UnauthorizedException("Invalid credentials");
+
+        const isPasswordValid = await argon2.verify(user.password, password);
+        if (!isPasswordValid) throw new UnauthorizedException("Invalid credentials");
+
+        return user;
+    }
+
+
     // create user handler
-    async createUserProfile(createUserDto: CreateUserDto) {
+    async signup(signupDto: SignupDto) {
         const user = await this.prismaService.user.findFirst({
-            where: {
-                OR: [{ email: createUserDto.email.toLowerCase() }, { phone: createUserDto.phone }]
-            }
+            where: { email: signupDto.email }
         })
 
-        if (user) throw new HttpException("User already exists", 400);
+        if (user) throw new HttpException(`User with the email ${signupDto.email} already exists`, 400);
 
-        validatePassword(createUserDto.password, createUserDto.confirm_password);
+        validatePassword(signupDto.password, signupDto.confirm_password);
 
         // create user
-        const { id } = await this.userService.createUser(createUserDto);
+        const { id } = await this.userService.createUser(signupDto);
 
-        // generate token
-        const accessToken = await this.jwtService.signAsync({ id }, { secret: process.env.JWT_SECRET, expiresIn: "1d" });
-        const refreshToken = uuidv4();
-        const refreshTokenHash = await argon2.hash(refreshToken);
+        // generate tokens
+        const accessToken = await this.tokenService.generateAccessToken(user)
+        const { refreshToken, refreshTokenHash } = await this.tokenService.generateRefreshTokenHash();
 
         await this.prismaService.refreshToken.upsert({
             where: { userId: id },
             update: { refreshTokenHash },
             create: {
-                refreshTokenHash,
-                userId: id
+                userId: id,
+                refreshTokenHash
             }
-        })
+        });
 
         return {
             success: true,
             message: "Account created successfully",
             accessToken,
+            refreshToken,
         }
     }
 
 
     // signin
-    async signin(loginUserDto: LoginUserDto) {
-        const user = await this.validateUser(loginUserDto.email, loginUserDto.password);
+    async signin(signinDto: SigninDto) {
+        const user = await this.validateEmail(signinDto.email, signinDto.password);
 
         // generate tokens
-        const accessToken = await this.jwtService.signAsync({ id: user.id }, { secret: process.env.JWT_SECRET, expiresIn: "1d" });
-
-        const refreshToken = uuidv4();
-        const refreshTokenHash = await argon2.hash(refreshToken);
+         const accessToken = await this.tokenService.generateAccessToken(user)
+         const { refreshToken, refreshTokenHash } = await this.tokenService.generateRefreshTokenHash();
 
         await this.prismaService.refreshToken.upsert({
             where: { userId: user.id },
@@ -147,12 +136,11 @@ export class AuthService {
             }
         })
 
-        delete user.password;
-
         return {
             success: true,
-            message: "Login successful",
+            message: "Signin successful",
             accessToken,
+            refreshToken
         }
     }
 }

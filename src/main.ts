@@ -7,11 +7,11 @@ async function bootstrap() {
 
     // swagger
     const config = new DocumentBuilder()
-    .setTitle('How to Nest JS')
-    .setDescription('The How to Nest JS API description')
-    .setVersion('1.0')
-    .addTag('how to nest js')
-    .build();
+        .setTitle('How to Nest JS')
+        .setDescription('This is the API documentation for How to Nest JS project.')
+        .setVersion('1.0')
+        .addTag('how to nest js')
+        .build();
 
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api', app, document);

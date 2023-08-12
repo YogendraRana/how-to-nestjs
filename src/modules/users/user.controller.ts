@@ -1,15 +1,13 @@
-import { Body, Controller, Post, ValidationPipe } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { UserService } from './user.service';
-import { CreateUserDto } from '../../common/dtos/create-user.dto';
+import { Controller } from '@nestjs/common';
 
+
+@ApiTags('Users')
 @Controller('users')
 export class UserController {
     constructor(
         private userService: UserService
     ) {}
 
-    @Post()
-    async createUser(@Body(new ValidationPipe) createUserDto: CreateUserDto) {
-        return this.userService.createUser(createUserDto);
-    }
 }

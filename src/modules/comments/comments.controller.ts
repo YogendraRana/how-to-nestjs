@@ -1,12 +1,12 @@
-import { AuthGuard } from '@nestjs/passport';
+import { ApiTags } from '@nestjs/swagger';
 import { CommentsService } from './comments.service';
-import { User } from 'src/common/decorators/user.decorator';
-import { UserInterface } from 'src/common/interfaces/user.interface';
-import { CreateCommentDto } from 'src/common/dtos/create-comment.dto';
-import { Controller, Delete, Get, Patch, Post, Body, UseGuards, Param } from '@nestjs/common';
+import { AccessTokenAuthGuard } from '../auth/guards/access-token.guard';
+import { CreateCommentDto } from 'src/modules/comments/dtos/create-comment.dto';
+import { Controller, Delete, Get, Patch, Post, Body, Param } from '@nestjs/common';
 
+
+@ApiTags('Comments')
 @Controller('comments')
-@UseGuards(AuthGuard('jwt'))
 export class CommentsController {
     constructor (
         private readonly commentsService: CommentsService,
@@ -15,8 +15,8 @@ export class CommentsController {
 
     // create comment to a post
     @Post()
-    async createComment (@Body() createCommentDto: CreateCommentDto, @User() user: UserInterface) {
-        return this.commentsService.createComment(createCommentDto, user);
+    async createComment (@Body() createCommentDto: CreateCommentDto) {
+        return this.commentsService.createComment(createCommentDto);
     }
 
 

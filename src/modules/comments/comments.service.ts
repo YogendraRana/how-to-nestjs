@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { UserInterface } from 'src/common/interfaces/user.interface';
-import { CreateCommentDto } from 'src/common/dtos/create-comment.dto';
+import { CreateCommentDto } from 'src/modules/comments/dtos/create-comment.dto';
 
 
 @Injectable()
@@ -12,8 +11,10 @@ export class CommentsService {
 
 
     // create comment to a post
-    async createComment(createCommentDto: CreateCommentDto, user: UserInterface) {
-        if (createCommentDto.userId !== user.id) throw new NotFoundException('User not found');
+    async createComment(createCommentDto: CreateCommentDto) {
+        // check if user exists
+        const user = await this.prismaService.user.findUnique({ where: { id: createCommentDto.userId } });
+        if (!user) throw new NotFoundException('User not found');
 
         // check if post exists
         const post = await this.prismaService.post.findUnique({ where: { id: createCommentDto.postId } });
@@ -54,11 +55,11 @@ export class CommentsService {
     async updateComment(commentId: string, content: string) {
         const comment = await this.prismaService.comment.findUnique({ where: { id: commentId } });
         if (!comment) throw new NotFoundException('Comment not found');
-        
+
         // Update the comment in the database
         const updatedComment = await this.prismaService.comment.update({
             where: { id: commentId },
-            data: { 
+            data: {
                 content: content || comment.content
             },
         });
@@ -73,16 +74,14 @@ export class CommentsService {
 
     // delete comment
     async deleteComment(commentId: string) {
-    const comment = await this.prismaService.comment.findUnique({ where: { id: commentId } });
-    if (!comment) throw new NotFoundException('Comment not found');
+        const comment = await this.prismaService.comment.findUnique({ where: { id: commentId } });
+        if (!comment) throw new NotFoundException('Comment not found');
 
-    console.log(comment)
+        await this.prismaService.comment.delete({ where: { id: commentId } })
 
-    await this.prismaService.comment.delete({ where: { id: commentId } })
-
-    return {
-        success: true,
-        message: 'Comment deleted successfully'
+        return {
+            success: true,
+            message: 'Comment deleted successfully'
+        }
     }
-}
 }

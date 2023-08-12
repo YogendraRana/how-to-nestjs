@@ -1,10 +1,10 @@
 import axios from 'axios'
 import * as FormData from 'form-data';
 import { PrismaService } from '../prisma/prisma.service';
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreatePostDto } from 'src/common/dtos/create-post.dto';
-import { UpdatePostDto } from '../../common/dtos/update-post.dto';
-import { UserInterface } from 'src/common/interfaces/user.interface';
+import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
+import { CreatePostDto } from 'src/modules/posts/dtos/create-post.dto';
+import { UpdatePostDto } from './dtos/update-post.dto';
+
 
 @Injectable()
 export class PostService {
@@ -13,55 +13,44 @@ export class PostService {
     ) { }
 
 
-    // get all posts
-    async getAllPosts() {
-        const posts = await this.prismaService.post.findMany();
-        return {
-            success: true,
-            message: 'Posts fetched successfully',
-            data: posts
-        }
-    }
-
-
-    // get specific post
-    async getPostById(postId: string) {
-        const post = await this.prismaService.post.findUnique({ where: { id: postId } });
-        if (!post) throw new NotFoundException('Post not found');
-
-        return {
-            success: true,
-            message: 'Post fetched successfully',
-            data: post
-        }
-    }
-
-
     // create post
-    async createPost(images: Array<Express.Multer.File>, createPostDto: CreatePostDto, user: UserInterface) {
+    async createPost(images: Array<Express.Multer.File>, createPostDto: CreatePostDto) {
+        const post = await this.prismaService.post.create({ data: createPostDto })
 
-        if (createPostDto.userId !== user.id) throw new NotFoundException('User not found');
-
-        createPostDto.images = createPostDto.images || [];
-
-        const uploadPromises = images.map(async (image) => {
+        Promise.all(images.map(async (image) => {
             const formData = new FormData();
             formData.append('file', image.buffer, image.originalname);
             formData.append('requireSignedURLs', 'false');
 
-            const response = await axios.post(process.env.CLOUDFLARE_POST_URL, formData, {
+            const response = await axios.post(process.env.CLOUDFLARE_IMAGES_URL, formData, {
                 headers: {
                     Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
                     'Content-Type': 'multipart/form-data',
                 },
             });
 
-            createPostDto.images.push({ imageId: response.data.result.id, url: response.data.result.variants[0] });
-        });
 
-        await Promise.all(uploadPromises);
+            let publicUrl: string, postUrl: string;
+            const variants = response.data.result.variants;
 
-        await this.prismaService.post.create({ data: createPostDto })
+            for (const variant of variants) {
+                if (variant.includes('/public')) {
+                    publicUrl = variant;
+                } else if (variant.includes('/post')) {
+                    postUrl = variant;
+                }
+            }
+
+            await this.prismaService.image.create({
+                data: {
+                    imageId: response.data.result.id,
+                    publicUrl: publicUrl,
+                    postUrl: postUrl,
+                    postId: post.id,
+                }
+            })
+
+        }));
 
         return {
             success: true,
@@ -70,29 +59,26 @@ export class PostService {
     }
 
 
-    // delete post
-    async deletePost(postId: string) {
+    // get all posts
+    async readPosts() {
+        const posts = await this.prismaService.post.findMany();
+        return {
+            success: true,
+            message: 'Posts fetched successfully',
+            posts: posts
+        }
+    }
+
+
+    // get specific post
+    async readPostById(postId: string) {
         const post = await this.prismaService.post.findUnique({ where: { id: postId } });
         if (!post) throw new NotFoundException('Post not found');
 
-        // delete images from cloudflare
-        const deleteImagesPromises = post.images.map(async (image: { url: string, imageId: string }) => {
-            await axios.delete(`${process.env.CLOUDFLARE_POST_URL}/${image.imageId}`, {
-                headers: {
-                    Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
-                    "Content-Type": "application/json",
-                },
-            });
-        })
-
-        await Promise.all(deleteImagesPromises);
-
-        // delete post from database
-        await this.prismaService.post.delete({ where: { id: postId } });
-
         return {
             success: true,
-            message: 'Post deleted successfully',
+            message: 'Post fetched successfully',
+            post: post
         }
     }
 
@@ -107,7 +93,7 @@ export class PostService {
             data: {
                 caption: updatePostDto.caption || post.caption,
                 location: updatePostDto.location || post.location,
-                isPublic: updatePostDto.isPublic || post.isPublic,
+                isPrivate: updatePostDto.isPrivate || post.isPrivate,
             }
         });
 
@@ -118,8 +104,35 @@ export class PostService {
     }
 
 
+    // delete post
+    async deletePost(postId: string) {
+        const post = await this.prismaService.post.findUnique({ where: { id: postId } });
+        if (!post) throw new NotFoundException('Post not found');
+
+        const images = await this.prismaService.image.findMany({ where: { postId } });
+
+        // delete images from cloudflare
+        await Promise.all(images.map(async (image: { publicUrl: string, postUrl: string, imageId: string }) => {
+            await axios.delete(`${process.env.CLOUDFLARE_IMAGES_URL}/${image.imageId}`, {
+                headers: {
+                    Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
+                    "Content-Type": "application/json",
+                },
+            });
+        }))
+
+        // delete post from database
+        await this.prismaService.post.delete({ where: { id: postId } });
+
+        return {
+            success: true,
+            message: 'Post deleted successfully',
+        }
+    }
+
+
     // get post of a user
-    async getPostsOfUser(userId: string) {
+    async readPostsOfUser(userId: string) {
         const posts = await this.prismaService.post.findMany({
             where: { userId: userId },
             orderBy: { createdAt: 'desc' },
