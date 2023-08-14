@@ -13,6 +13,7 @@ import { AppController } from './app.controller';
 
 // import services
 import { AppService } from './app.service';
+import { ReactionsModule } from './modules/reactions/reactions.module';
 
 @Module({
     imports: [
@@ -22,6 +23,7 @@ import { AppService } from './app.service';
         PrismaModule,
         CommentsModule,
         ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+        ReactionsModule,
     ],
     controllers: [AppController],
     providers: [AppService],
