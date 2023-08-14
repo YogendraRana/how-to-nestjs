@@ -6,10 +6,10 @@ import { UserService } from '../users/user.service';
 import generateOtp from 'src/common/util/generateOtp';
 import { PrismaService } from '../prisma/prisma.service';
 import { SignupDto } from 'src/modules/auth/dtos/signup.dto';
+import { MailService } from 'src/services/mail/mail.service';
 import validatePassword from 'src/common/util/validatePassword';
 import { VerifyEmailOtpDto } from './dtos/verify-email-otp.dto';
 import { TokenService } from 'src/services/token/token.service';
-import { EmailService } from '../../services/email/email.service';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 
 
@@ -18,7 +18,7 @@ export class AuthService {
     constructor(
         private userService: UserService,
         private tokenService: TokenService,
-        private emailService: EmailService,
+        private mailService: MailService,
         private prismaService: PrismaService,
     ) { }
 
@@ -40,7 +40,7 @@ export class AuthService {
             }
         })
 
-        await this.emailService.sendEmail("yogendrarana9595@gmail.com", emailOtpDto.email, "OTP verification", `Your OTP token is ${otp}`);
+        await this.mailService.sendMail(process.env.MAIL_SENDER, emailOtpDto.email, "OTP verification", `Your OTP token is ${otp}`);
 
         return {
             success: true,
@@ -75,7 +75,7 @@ export class AuthService {
     // validate user email and password
     async validateEmail(email: string, password: string) {
         const user = await this.userService.findUserByEmail(email);
-        if (!user) throw new UnauthorizedException("Invalid credentials");
+        if (!user) throw new HttpException(`User with the email ${email} does not exist`, 400);
 
         const isPasswordValid = await argon2.verify(user.password, password);
         if (!isPasswordValid) throw new UnauthorizedException("Invalid credentials");
@@ -98,7 +98,7 @@ export class AuthService {
         const { id } = await this.userService.createUser(signupDto);
 
         // generate tokens
-        const accessToken = await this.tokenService.generateAccessToken(user)
+        const accessToken = await this.tokenService.generateAccessToken(id)
         const { refreshToken, refreshTokenHash } = await this.tokenService.generateRefreshTokenHash();
 
         await this.prismaService.refreshToken.upsert({
@@ -124,7 +124,7 @@ export class AuthService {
         const user = await this.validateEmail(signinDto.email, signinDto.password);
 
         // generate tokens
-         const accessToken = await this.tokenService.generateAccessToken(user)
+         const accessToken = await this.tokenService.generateAccessToken(user.id)
          const { refreshToken, refreshTokenHash } = await this.tokenService.generateRefreshTokenHash();
 
         await this.prismaService.refreshToken.upsert({

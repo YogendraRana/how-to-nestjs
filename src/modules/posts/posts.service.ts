@@ -1,13 +1,13 @@
 import axios from 'axios'
 import * as FormData from 'form-data';
-import { PrismaService } from '../prisma/prisma.service';
-import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreatePostDto } from 'src/modules/posts/dtos/create-post.dto';
 import { UpdatePostDto } from './dtos/update-post.dto';
+import { PrismaService } from '../prisma/prisma.service';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { CreatePostDto } from 'src/modules/posts/dtos/create-post.dto';
 
 
 @Injectable()
-export class PostService {
+export class PostsService {
     constructor(
         private prismaService: PrismaService,
     ) { }

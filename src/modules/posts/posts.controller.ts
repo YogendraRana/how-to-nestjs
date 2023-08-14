@@ -1,18 +1,16 @@
 import { ApiTags } from '@nestjs/swagger';
-import { PostService } from './post.service';
+import { PostsService } from './posts.service';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { CreatePostDto } from 'src/modules/posts/dtos/create-post.dto';
 import { UpdatePostDto } from 'src/modules/posts/dtos/update-post.dto';
-import { AccessTokenAuthGuard } from '../auth/guards/access-token.guard';
-import { Controller, Get, Param, Post, Delete, UseGuards, UseInterceptors, UploadedFiles, Body, Patch, Query } from '@nestjs/common';
+import { Controller, Get, Param, Post, Delete, UseInterceptors, UploadedFiles, Body, Patch, Query } from '@nestjs/common';
 
 
 @ApiTags('Posts')
 @Controller('posts')
-// @UseGuards(AccessTokenAuthGuard)
-export class PostController {
+export class PostsController {
     constructor(
-        private readonly postService: PostService,
+        private readonly postsService: PostsService,
     ) { }
 
 
@@ -20,41 +18,41 @@ export class PostController {
     @Post()
     @UseInterceptors(FilesInterceptor('images'))
     async createPost(@UploadedFiles() images: Array<Express.Multer.File>, @Body() createPostDto: CreatePostDto) {
-        return this.postService.createPost(images, createPostDto);
+        return this.postsService.createPost(images, createPostDto);
     }
 
 
     // get all posts
     @Get()
     async readPosts() {
-        return this.postService.readPosts();
+        return this.postsService.readPosts();
     }
 
 
     // get specific post
     @Get(':id')
     async readPostById(@Param('id') postId: string) {
-        return this.postService.readPostById(postId);
+        return this.postsService.readPostById(postId);
     }
 
 
     // update post
     @Patch(':id')
     async updatePost(@Param('id') postId: string, @Body() updatePostDto: UpdatePostDto) {
-        return this.postService.updatePost(postId, updatePostDto);
+        return this.postsService.updatePost(postId, updatePostDto);
     }
 
 
     // delete post
     @Delete(':id')
     async deletePost(@Param('id') postId: string) {
-        return this.postService.deletePost(postId);
+        return this.postsService.deletePost(postId);
     }
 
 
     // get posts of a user
     @Get()
     async readPostsOfUser(@Query('userId') userId: string) {
-        return this.postService.readPostsOfUser(userId);
+        return this.postsService.readPostsOfUser(userId);
     }
 }

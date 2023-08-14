@@ -3,9 +3,10 @@ import { EmailOtpDto } from './dtos/email-otp';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
 import { SignupDto } from 'src/modules/auth/dtos/signup.dto';
 import { SigninDto } from 'src/modules/auth/dtos/signin.dto';
+import { Public } from 'src/common/decorators/public.decorator';
+import { LocalEmailAuthGuard } from './guards/local-email.guard';
 import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
 import { VerifyEmailOtpDto } from 'src/modules/auth/dtos/verify-email-otp.dto';
-import { LocalEmailAuthGuard } from './guards/local-email.guard';
 
 
 @ApiTags('Auth')
@@ -15,7 +16,9 @@ export class AuthController {
         private readonly authService: AuthService
     ) { }
 
- 
+    
+    // request otp
+    @Public()
     @Post('otp/email')
     @ApiBody({type: EmailOtpDto})
     @HttpCode(200)
@@ -24,6 +27,8 @@ export class AuthController {
     }
 
 
+    // verify otp
+    @Public()
     @Post('otp/email/verify')
     @ApiBody({type: VerifyEmailOtpDto})
     @HttpCode(200)
@@ -33,6 +38,7 @@ export class AuthController {
 
 
     // signup or register
+    @Public()
     @Post('signup')
     @ApiBody({type: SignupDto})
     async signup(@Body() signupDto: SignupDto) {
@@ -41,9 +47,10 @@ export class AuthController {
 
 
     // signin or login
-    @Post('signin')
+    @Public()
     @ApiBody({type: SigninDto})
     @UseGuards(LocalEmailAuthGuard)
+    @Post('signin')
     async signin (@Body() signinDto: SigninDto) {
         return this.authService.signin(signinDto);
     }
