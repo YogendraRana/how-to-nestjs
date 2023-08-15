@@ -21,8 +21,8 @@ export class AccessTokenAuthGuard extends AuthGuard('access-token') implements C
         }
 
         const request = context.switchToHttp().getRequest();
-        if (!request.headers.authorization || !request.headers.Authorization || !request.headers.authorization.startsWith('Bearer ')) {
-            throw new UnauthorizedException('Missing Authorization header');
+        if (!request.headers.authorization || !request.headers.authorization.startsWith('Bearer ')) {
+            throw new UnauthorizedException('Missing authorization header');
         }
 
         return super.canActivate(context);

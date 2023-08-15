@@ -1,8 +1,9 @@
 import axios from 'axios'
 import * as FormData from 'form-data';
 import { UpdatePostDto } from './dtos/update-post.dto';
-import { PrismaService } from '../prisma/prisma.service';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from 'src/services/prisma/prisma.service';
+import { UserInterface } from 'src/common/interfaces/user.interface';
 import { CreatePostDto } from 'src/modules/posts/dtos/create-post.dto';
 
 
@@ -14,7 +15,9 @@ export class PostsService {
 
 
     // create post
-    async createPost(images: Array<Express.Multer.File>, createPostDto: CreatePostDto) {
+    async createPost(images: Array<Express.Multer.File>, createPostDto: CreatePostDto, currentUser: UserInterface) {
+        if(currentUser.id !== createPostDto.userId) throw new ForbiddenException('You are not authorized to create a post for this user.');
+
         const post = await this.prismaService.post.create({ data: createPostDto })
 
         Promise.all(images.map(async (image) => {

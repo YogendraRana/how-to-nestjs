@@ -92,3 +92,12 @@ model Comment {
     parent   Comment?  @relation(name: "Child_Comment", fields: [parentId], references: [id], onDelete: Cascade)
     children Comment[] @relation(name: "Child_Comment")
 }
+
+model Reaction {
+    id        String   @id @default(cuid())
+    name      String   @unique
+    url       String
+    price     Int      @default(0)
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+}

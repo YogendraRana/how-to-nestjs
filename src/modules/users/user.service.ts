@@ -1,7 +1,8 @@
 import * as argon2 from 'argon2'
 import { Injectable } from '@nestjs/common';
 import { SignupDto } from 'src/modules/auth/dtos/signup.dto';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from 'src/services/prisma/prisma.service';
+
 
 @Injectable()
 export class UserService {

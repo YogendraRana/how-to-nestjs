@@ -5,7 +5,7 @@ import { AuthService } from './auth.service';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { UserService } from '../users/user.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../services/prisma/prisma.service';
 import { TokenService } from 'src/services/token/token.service';
 import { AccessTokenAuthGuard } from './guards/access-token.guard';
 import { LocalEmailStrategy } from './strategies/local-email.strategy';
@@ -28,10 +28,10 @@ import { MailService } from 'src/services/mail/mail.service';
         AuthService,
         UserService,
         PrismaService,
-        LocalEmailStrategy,
         TokenService,
-        AccessTokenStrategy,
         MailService,
+        LocalEmailStrategy,
+        AccessTokenStrategy,
         {
             provide: APP_GUARD,
             useClass: AccessTokenAuthGuard

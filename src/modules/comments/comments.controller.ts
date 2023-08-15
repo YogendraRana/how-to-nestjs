@@ -1,8 +1,10 @@
 import { ApiTags } from '@nestjs/swagger';
 import { CommentsService } from './comments.service';
-import { AccessTokenAuthGuard } from '../auth/guards/access-token.guard';
+import { CurrentUser } from 'src/common/decorators/user.decorator';
+import { UserInterface } from 'src/common/interfaces/user.interface';
 import { CreateCommentDto } from 'src/modules/comments/dtos/create-comment.dto';
 import { Controller, Delete, Get, Patch, Post, Body, Param } from '@nestjs/common';
+import { UpdateCommentDto } from './dtos/update-commet.dto';
 
 
 @ApiTags('Comments')
@@ -15,8 +17,8 @@ export class CommentsController {
 
     // create comment to a post
     @Post()
-    async createComment (@Body() createCommentDto: CreateCommentDto) {
-        return this.commentsService.createComment(createCommentDto);
+    async createComment (@Body() createCommentDto: CreateCommentDto, @CurrentUser() currentUser: UserInterface) {
+        return this.commentsService.createComment(createCommentDto, currentUser);
     }
 
 
@@ -29,8 +31,8 @@ export class CommentsController {
 
     // update comment
     @Patch(':id')
-    async updateComment (@Param('id') commentId: string, @Body('content') content: string) {
-        return this.commentsService.updateComment(commentId, content);
+    async updateComment (@Param('id') commentId: string, @Body() updateCommentDto: UpdateCommentDto) {
+        return this.commentsService.updateComment(commentId, updateCommentDto);
     }
 
 

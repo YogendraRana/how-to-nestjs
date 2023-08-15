@@ -4,13 +4,13 @@ import { HttpException } from '@nestjs/common';
 import { EmailOtpDto } from './dtos/email-otp';
 import { UserService } from '../users/user.service';
 import generateOtp from 'src/common/util/generateOtp';
-import { PrismaService } from '../prisma/prisma.service';
 import { SignupDto } from 'src/modules/auth/dtos/signup.dto';
 import { MailService } from 'src/services/mail/mail.service';
 import validatePassword from 'src/common/util/validatePassword';
 import { VerifyEmailOtpDto } from './dtos/verify-email-otp.dto';
 import { TokenService } from 'src/services/token/token.service';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PrismaService } from '../../services/prisma/prisma.service';
 
 
 @Injectable()

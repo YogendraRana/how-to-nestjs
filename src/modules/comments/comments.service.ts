@@ -1,6 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from 'src/services/prisma/prisma.service';
+import { UserInterface } from 'src/common/interfaces/user.interface';
 import { CreateCommentDto } from 'src/modules/comments/dtos/create-comment.dto';
+import { UpdateCommentDto } from './dtos/update-commet.dto';
 
 
 @Injectable()
@@ -11,10 +13,9 @@ export class CommentsService {
 
 
     // create comment to a post
-    async createComment(createCommentDto: CreateCommentDto) {
-        // check if user exists
-        const user = await this.prismaService.user.findUnique({ where: { id: createCommentDto.userId } });
-        if (!user) throw new NotFoundException('User not found');
+    async createComment(createCommentDto: CreateCommentDto, currentUser: UserInterface) {
+        // check if user id matches the current user id
+        if(currentUser.id !== createCommentDto.userId) throw new ForbiddenException('You are not authorized to create a comment for this user.');
 
         // check if post exists
         const post = await this.prismaService.post.findUnique({ where: { id: createCommentDto.postId } });
@@ -52,28 +53,29 @@ export class CommentsService {
 
 
     // update comment
-    async updateComment(commentId: string, content: string) {
+    async updateComment(commentId: string, updateCommentDto: UpdateCommentDto) {
+        // check if comment exists
         const comment = await this.prismaService.comment.findUnique({ where: { id: commentId } });
         if (!comment) throw new NotFoundException('Comment not found');
 
         // Update the comment in the database
-        const updatedComment = await this.prismaService.comment.update({
+        await this.prismaService.comment.update({
             where: { id: commentId },
             data: {
-                content: content || comment.content
+                content: updateCommentDto.content || comment.content
             },
         });
 
         return {
             success: true,
             message: 'Comment updated successfully',
-            updatedComment,
         };
     }
 
 
     // delete comment
     async deleteComment(commentId: string) {
+        // check if comment exists
         const comment = await this.prismaService.comment.findUnique({ where: { id: commentId } });
         if (!comment) throw new NotFoundException('Comment not found');
 

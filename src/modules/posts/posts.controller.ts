@@ -1,6 +1,8 @@
 import { ApiTags } from '@nestjs/swagger';
 import { PostsService } from './posts.service';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { CurrentUser } from 'src/common/decorators/user.decorator';
+import { UserInterface } from 'src/common/interfaces/user.interface';
 import { CreatePostDto } from 'src/modules/posts/dtos/create-post.dto';
 import { UpdatePostDto } from 'src/modules/posts/dtos/update-post.dto';
 import { Controller, Get, Param, Post, Delete, UseInterceptors, UploadedFiles, Body, Patch, Query } from '@nestjs/common';
@@ -17,8 +19,8 @@ export class PostsController {
     // create post
     @Post()
     @UseInterceptors(FilesInterceptor('images'))
-    async createPost(@UploadedFiles() images: Array<Express.Multer.File>, @Body() createPostDto: CreatePostDto) {
-        return this.postsService.createPost(images, createPostDto);
+    async createPost(@UploadedFiles() images: Array<Express.Multer.File>, @Body() createPostDto: CreatePostDto, @CurrentUser() currentUser: UserInterface) {
+        return this.postsService.createPost(images, createPostDto, currentUser);
     }
 
 
