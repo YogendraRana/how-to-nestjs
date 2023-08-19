@@ -1,8 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { UpdateCommentDto } from './dtos/update-comment.dto';
 import { PrismaService } from 'src/services/prisma/prisma.service';
 import { UserInterface } from 'src/common/interfaces/user.interface';
 import { CreateCommentDto } from 'src/modules/comments/dtos/create-comment.dto';
-import { UpdateCommentDto } from './dtos/update-commet.dto';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 
 
 @Injectable()

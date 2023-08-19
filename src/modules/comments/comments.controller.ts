@@ -4,7 +4,7 @@ import { CurrentUser } from 'src/common/decorators/user.decorator';
 import { UserInterface } from 'src/common/interfaces/user.interface';
 import { CreateCommentDto } from 'src/modules/comments/dtos/create-comment.dto';
 import { Controller, Delete, Get, Patch, Post, Body, Param } from '@nestjs/common';
-import { UpdateCommentDto } from './dtos/update-commet.dto';
+import { UpdateCommentDto } from './dtos/update-comment.dto';
 
 
 @ApiTags('Comments')

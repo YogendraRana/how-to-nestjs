@@ -13,6 +13,7 @@ import { UserModule } from './modules/users/user.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { CommentsModule } from './modules/comments/comments.module';
 import { ReactionsModule } from './modules/reactions/reactions.module';
+import { PostReactionsModule } from './modules/postreactions/postreactions.module';
 
 
 @Module({
@@ -22,6 +23,7 @@ import { ReactionsModule } from './modules/reactions/reactions.module';
         PostsModule,
         CommentsModule,
         ReactionsModule,
+        PostReactionsModule,
         ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     ],
     controllers: [AppController],

@@ -140,6 +140,7 @@ export class PostsService {
             where: { userId: userId },
             orderBy: { createdAt: 'desc' },
         });
+        
         return {
             success: true,
             message: 'Posts fetched successfully',

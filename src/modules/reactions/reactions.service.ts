@@ -3,8 +3,8 @@ import * as FormData from 'form-data';
 import { ConfigService } from '@nestjs/config';
 import { Injectable, HttpException } from '@nestjs/common';
 import { CreateReactionDto } from './dtos/create-reaction.dto';
-import { PrismaService } from 'src/services/prisma/prisma.service';
 import { UpdateReactionDto } from './dtos/update-reaction.dto';
+import { PrismaService } from 'src/services/prisma/prisma.service';
 
 
 @Injectable()
