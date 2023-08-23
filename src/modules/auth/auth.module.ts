@@ -5,12 +5,14 @@ import { AuthService } from './auth.service';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { UserService } from '../users/user.service';
-import { PrismaService } from '../../services/prisma/prisma.service';
+import { OtpService } from 'src/services/otp/otp.service';
+import { MailService } from 'src/services/mail/mail.service';
 import { TokenService } from 'src/services/token/token.service';
 import { AccessTokenAuthGuard } from './guards/access-token.guard';
+import { PrismaService } from '../../services/prisma/prisma.service';
 import { LocalEmailStrategy } from './strategies/local-email.strategy';
 import { AccessTokenStrategy } from './strategies/access-token.strategy';
-import { MailService } from 'src/services/mail/mail.service';
+import { PasswordService } from 'src/services/password/password.service';
 
 
 @Module({
@@ -21,15 +23,17 @@ import { MailService } from 'src/services/mail/mail.service';
             secret: process.env.JWT_ACCESS_SECRET,
         }),
     ],
-    controllers: [
-        AuthController
-    ],
+
+    controllers: [ AuthController ],
+
     providers: [
         AuthService,
         UserService,
         PrismaService,
         TokenService,
         MailService,
+        PasswordService,
+        OtpService,
         LocalEmailStrategy,
         AccessTokenStrategy,
         {
@@ -37,9 +41,7 @@ import { MailService } from 'src/services/mail/mail.service';
             useClass: AccessTokenAuthGuard
         }
     ],
-    exports: [
-        AuthService
-    ]
+    exports: [ AuthService ]
 })
 
 

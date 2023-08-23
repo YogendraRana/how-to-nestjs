@@ -1,75 +1,27 @@
 import * as argon2 from 'argon2';
 import { SigninDto } from './dtos/signin.dto';
 import { HttpException } from '@nestjs/common';
-import { EmailOtpDto } from './dtos/email-otp';
 import { UserService } from '../users/user.service';
-import generateOtp from 'src/common/util/generateOtp';
+import { VerifyOtpDto } from './dtos/verify-otp.dto';
+import { OtpService } from 'src/services/otp/otp.service';
 import { SignupDto } from 'src/modules/auth/dtos/signup.dto';
 import { MailService } from 'src/services/mail/mail.service';
-import validatePassword from 'src/common/util/validatePassword';
-import { VerifyEmailOtpDto } from './dtos/verify-email-otp.dto';
 import { TokenService } from 'src/services/token/token.service';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../services/prisma/prisma.service';
+import { PasswordService } from 'src/services/password/password.service';
 
 
 @Injectable()
 export class AuthService {
     constructor(
+        private otpService: OtpService,
+        private mailService: MailService,
         private userService: UserService,
         private tokenService: TokenService,
-        private mailService: MailService,
         private prismaService: PrismaService,
+        private passwordService: PasswordService
     ) { }
-
-
-    // send otp
-    async sendOtpToEmail(emailOtpDto: EmailOtpDto) {
-        if (!emailOtpDto.email) throw new HttpException("Email is required", 400);
-
-        const user = await this.prismaService.user.findUnique({ where: { email: emailOtpDto.email } });
-        if (user) throw new HttpException(`${emailOtpDto.email} is already registered. Please use another email`, 400);
-
-        await this.prismaService.otp.deleteMany({ where: { email: emailOtpDto.email } })
-        const otp = generateOtp();
-
-        await this.prismaService.otp.create({
-            data: {
-                email: emailOtpDto.email,
-                code: otp
-            }
-        })
-
-        await this.mailService.sendMail(process.env.MAIL_SENDER, emailOtpDto.email, "OTP verification", `Your OTP token is ${otp}`);
-
-        return {
-            success: true,
-            message: `OTP successfully sent to ${emailOtpDto.email}`
-        }
-    }
-
-
-    // verify otp
-    async verifyEmailOtp(verifyEmailOtpDto: VerifyEmailOtpDto) {
-        const row = await this.prismaService.otp.findFirst({ where: { email: verifyEmailOtpDto.email } })
-        if (!row) throw new HttpException(`No OTP was sent to ${verifyEmailOtpDto.email}`, 400);
-
-        if (verifyEmailOtpDto.otp !== row.code) throw new HttpException("Invalid OTP", 400);
-
-        // check if the otp is expired or not
-        const createdDate = new Date(row.createdAt);
-        const currentDate = new Date(Date.now());
-
-        const diff = createdDate.getTime() - currentDate.getTime();
-        if (diff > 600000) throw new HttpException("OTP expired", 400);
-
-        await this.prismaService.otp.deleteMany({ where: { email: verifyEmailOtpDto.email } })
-
-        return {
-            success: true,
-            message: "OTP verified successfully",
-        };
-    }
 
 
     // validate user email and password
@@ -86,21 +38,26 @@ export class AuthService {
 
     // create user handler
     async signup(signupDto: SignupDto) {
-        const user = await this.prismaService.user.findFirst({
-            where: { email: signupDto.email }
-        })
-
+        // check if user already exists
+        const user = await this.prismaService.user.findFirst({ where: { email: signupDto.email } })
         if (user) throw new HttpException(`User with the email ${signupDto.email} already exists`, 400);
 
-        validatePassword(signupDto.password, signupDto.confirm_password);
+        // validate password
+        this.passwordService.validatePassword(signupDto.password, signupDto.confirm_password);
 
         // create user
-        const { id } = await this.userService.createUser(signupDto);
+        const { id, email } = await this.userService.createUser(signupDto);
+
+        // send verification otp to email
+        const otp = this.otpService.generateOtp();
+        await this.prismaService.otp.create({ data: { email: email, code: otp } })
+        await this.mailService.sendMail(process.env.MAIL_SENDER, email, "OTP verification", `Your OTP token is ${otp}`);
 
         // generate tokens
         const accessToken = await this.tokenService.generateAccessToken(id)
         const { refreshToken, refreshTokenHash } = await this.tokenService.generateRefreshTokenHash();
 
+        // save refresh token hash
         await this.prismaService.refreshToken.upsert({
             where: { userId: id },
             update: { refreshTokenHash },
@@ -142,5 +99,31 @@ export class AuthService {
             accessToken,
             refreshToken
         }
+    }
+
+
+    // verify otp
+    async verifyOtp(verifyOtpDto: VerifyOtpDto) {
+        const row = await this.prismaService.otp.findFirst({ where: { email: verifyOtpDto.email } })
+        if (!row) throw new HttpException('Cannot find provided OTP', 400);
+        if (verifyOtpDto.otp !== row.code) throw new HttpException("Invalid OTP", 400);
+
+        // check if the otp is expired or not
+        const createdDate = new Date(row.createdAt);
+        const currentDate = new Date(Date.now());
+
+        const diff = createdDate.getTime() - currentDate.getTime();
+        if (diff > 10*60*1000) throw new HttpException("OTP expired", 400);
+
+        // update user
+        await this.prismaService.user.update({ where: { email: verifyOtpDto.email }, data: { isVerified: true } })
+
+        // delete otp
+        await this.prismaService.otp.deleteMany({ where: { email: verifyOtpDto.email } })
+
+        return {
+            success: true,
+            message: "OTP verified successfully",
+        };
     }
 }
