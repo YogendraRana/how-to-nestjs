@@ -13,6 +13,12 @@ enum Gender {
     OTHER
 }
 
+enum OtpType {
+    EMAIL_VERIFICATION
+    PHONE_VERIFICATION
+    PASSWORD_RESET
+}
+
 model User {
     id               String   @id @default(cuid())
     email            String   @unique
@@ -37,6 +43,7 @@ model Otp {
     email     String?
     phone     String?
     code      Int
+    otpType   OtpType  @map("otp_type")
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @updatedAt @map("updated_at")
 }

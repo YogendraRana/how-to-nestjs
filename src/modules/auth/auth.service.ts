@@ -1,11 +1,13 @@
 import * as argon2 from 'argon2';
+import { OtpType } from '@prisma/client';
 import { SigninDto } from './dtos/signin.dto';
 import { HttpException } from '@nestjs/common';
+import { OtpService } from '../otp/otp.service';
 import { UserService } from '../users/user.service';
 import { VerifyOtpDto } from './dtos/verify-otp.dto';
-import { OtpService } from 'src/services/otp/otp.service';
 import { SignupDto } from 'src/modules/auth/dtos/signup.dto';
 import { MailService } from 'src/services/mail/mail.service';
+import { ForgotPasswordDto } from './dtos/forgot-password.dto';
 import { TokenService } from 'src/services/token/token.service';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../services/prisma/prisma.service';
@@ -50,8 +52,8 @@ export class AuthService {
 
         // send verification otp to email
         const otp = this.otpService.generateOtp();
-        await this.prismaService.otp.create({ data: { email: email, code: otp } })
-        await this.mailService.sendMail(process.env.MAIL_SENDER, email, "OTP verification", `Your OTP token is ${otp}`);
+        await this.prismaService.otp.create({ data: { email: email, code: otp, otpType: OtpType.EMAIL_VERIFICATION } })
+        await this.mailService.sendMail(process.env.MAIL_SENDER, email, "Email verification", `Your OTP token is ${otp}`);
 
         // generate tokens
         const accessToken = await this.tokenService.generateAccessToken(id)
@@ -81,8 +83,8 @@ export class AuthService {
         const user = await this.validateEmail(signinDto.email, signinDto.password);
 
         // generate tokens
-         const accessToken = await this.tokenService.generateAccessToken(user.id)
-         const { refreshToken, refreshTokenHash } = await this.tokenService.generateRefreshTokenHash();
+        const accessToken = await this.tokenService.generateAccessToken(user.id)
+        const { refreshToken, refreshTokenHash } = await this.tokenService.generateRefreshTokenHash();
 
         await this.prismaService.refreshToken.upsert({
             where: { userId: user.id },
@@ -102,28 +104,70 @@ export class AuthService {
     }
 
 
-    // verify otp
-    async verifyOtp(verifyOtpDto: VerifyOtpDto) {
-        const row = await this.prismaService.otp.findFirst({ where: { email: verifyOtpDto.email } })
-        if (!row) throw new HttpException('Cannot find provided OTP', 400);
-        if (verifyOtpDto.otp !== row.code) throw new HttpException("Invalid OTP", 400);
+    // verify email with otp
+    async verifyEmail(verifyOtpDto: VerifyOtpDto) {
+        const { success, message } = await this.otpService.verifyOtp(verifyOtpDto);
 
-        // check if the otp is expired or not
-        const createdDate = new Date(row.createdAt);
-        const currentDate = new Date(Date.now());
+        // update user isVerified status
+        if (success){
+            await this.prismaService.user.update({ where: { email: verifyOtpDto.email }, data: { isVerified: true } })
+        }
 
-        const diff = createdDate.getTime() - currentDate.getTime();
-        if (diff > 10*60*1000) throw new HttpException("OTP expired", 400);
+        return { success, message }
+    }
 
-        // update user
-        await this.prismaService.user.update({ where: { email: verifyOtpDto.email }, data: { isVerified: true } })
 
-        // delete otp
-        await this.prismaService.otp.deleteMany({ where: { email: verifyOtpDto.email } })
+    // forgot password
+    async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+        // check if user exists
+        const user = await this.prismaService.user.findFirst({ where: { email: forgotPasswordDto.email } })
+        if (!user) throw new HttpException(`User with the email ${forgotPasswordDto.email} does not exist`, 400);
+
+        // delete any existing password reset otp for the user
+        await this.prismaService.otp.deleteMany({ where: { email: forgotPasswordDto.email, otpType: OtpType.PASSWORD_RESET }})
+        
+        // send password recovery otp
+        const otp = this.otpService.generateOtp();
+        await this.prismaService.otp.create({ data: { email: forgotPasswordDto.email, code: otp, otpType: OtpType.PASSWORD_RESET } })
+        await this.mailService.sendMail(process.env.MAIL_SENDER, forgotPasswordDto.email, "Password reset OTP", `Your password reset OTP is ${otp}`);
 
         return {
             success: true,
-            message: "OTP verified successfully",
-        };
+            message: "Password reset otp sent successfully",
+        }
     }
+
+
+    // verify password reset otp
+    async verifyPasswordResetOtp(verifyOtpDto: VerifyOtpDto) {
+        return await this.otpService.verifyOtp(verifyOtpDto);
+    }
+
+
+    // reset password
+    async resetPassword() {
+        return {
+            success: true,
+            message: "Password reset successful"
+        }
+    }
+
+
+    // update password
+    async updatePassword() {
+        return {
+            success: true,
+            message: "Password updated successfully"
+        }
+    }
+
+
+    // logout
+    async logout() {
+        return {
+            success: true,
+            message: "Logout successful"
+        }
+    }
+
 }

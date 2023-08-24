@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 
 // import controllers
 import { AppController } from './app.controller';
@@ -7,7 +8,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 // import modules
-import { ConfigModule } from '@nestjs/config';
+import { OtpModule } from './modules/otp/otp.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/users/user.module';
 import { PostsModule } from './modules/posts/posts.module';
@@ -18,6 +19,7 @@ import { PostReactionsModule } from './modules/postreactions/postreactions.modul
 
 @Module({
     imports: [
+        OtpModule,
         AuthModule,
         UserModule,
         PostsModule,

@@ -1,5 +1,6 @@
+import { OtpType } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsEmail } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsEmail, IsEnum } from 'class-validator';
 
 export class VerifyOtpDto {
     @ApiProperty({example: 'johndoe@gmail.com'})
@@ -12,4 +13,10 @@ export class VerifyOtpDto {
     @IsNumber()
     @IsNotEmpty()
     otp: number;
+
+    
+    @ApiProperty({example: OtpType.EMAIL_VERIFICATION})
+    @IsNotEmpty()
+    @IsEnum(OtpType)
+    otpType: OtpType;
 }
