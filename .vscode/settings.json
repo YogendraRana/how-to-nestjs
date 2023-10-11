@@ -1,10 +1,12 @@
 {
     "cSpell.words": [
         "dtos",
+        "nestjs",
         "Pokhara",
         "postreactions",
         "SENDGRID",
         "signin",
-        "uuidv"
+        "uuidv",
+        "websockets"
     ]
 }

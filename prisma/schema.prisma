@@ -36,6 +36,8 @@ model User {
     posts         Post[]
     comments      Comment[]
     post_reaction PostReaction[]
+    chats         Chat[]
+    messages      Message[]
 }
 
 model Otp {
@@ -123,4 +125,30 @@ model PostReaction {
     user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
     post     Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
     reaction Reaction @relation(fields: [reactionId], references: [id], onDelete: Cascade)
+}
+
+model Chat {
+    id        String    @id @default(cuid())
+    isGroup   Boolean   @map("is_group")
+    name      String?
+    adminId   String?   @map("admin_id")
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime  @updatedAt @map("updated_at")
+    deletedAt DateTime? @map("deleted_at")
+
+    members  User[]
+    messages Message[]
+}
+
+model Message {
+    id         String   @id @default(cuid())
+    chatId     String   @map("chat_id")
+    senderId   String
+    receiverId String
+    text       String
+    createdAt  DateTime @default(now()) @map("created_at")
+    updatedAt  DateTime @updatedAt @map("updated_at")
+
+    chat   Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+    sender User @relation(fields: [senderId], references: [id])
 }

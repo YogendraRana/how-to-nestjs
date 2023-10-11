@@ -10,6 +10,7 @@ import { AppService } from './app.service';
 // import modules
 import { OtpModule } from './modules/otp/otp.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ChatModule } from './modules/chat/chat.module';
 import { UserModule } from './modules/users/user.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { CommentsModule } from './modules/comments/comments.module';
@@ -22,6 +23,7 @@ import { PostReactionsModule } from './modules/postreactions/postreactions.modul
         OtpModule,
         AuthModule,
         UserModule,
+        ChatModule,
         PostsModule,
         CommentsModule,
         ReactionsModule,
@@ -31,5 +33,6 @@ import { PostReactionsModule } from './modules/postreactions/postreactions.modul
     controllers: [AppController],
     providers: [AppService],
 })
+
 
 export class AppModule { }
