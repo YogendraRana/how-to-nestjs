@@ -42,7 +42,6 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
         // we can verify user using the userId or token
         // it will be done in future
-
         const userId = client.handshake.query.userId as string;
 
         // if the userId is in the activeUsers map, it means the user is already connected
@@ -50,8 +49,9 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
             this.activeUsers.set(userId, client.id);
         }
 
-        console.log("ID", Array.from(this.activeUsers.keys()));
-        console.log("Socket", Array.from(this.activeUsers.values()));
+        const arrayOfObjects = Array.from(this.activeUsers, ([key, value]) => ({ key, value }));
+
+        console.log(arrayOfObjects);
 
     }
 
@@ -71,7 +71,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
     // listen for get_online_users event
     @SubscribeMessage('get_online_users')
-    async getOnlineUsers(@MessageBody() message, @ConnectedSocket() client: Socket) {
+    async getOnlineUsers(@MessageBody() message: { userId: string }, @ConnectedSocket() client: Socket) {
         // get the online users with whom user has chat history
         const onlineUsers = [];
         const userId = message.userId;
@@ -112,7 +112,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     async deleteMessage(@MessageBody() deleteMessageDto: DeleteMessageDto) {
         // delete message from db
         await this.chatService.deleteMessage(deleteMessageDto);
-        
+
         const chat = await this.chatService.getChatById(deleteMessageDto.chatId);
 
         // iterate over the members of the chat
@@ -132,6 +132,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     @SubscribeMessage('typing')
     async typing(@MessageBody() data: { senderId: string, chatId: string, isTyping: boolean }) {
         const chat = await this.chatService.getChatById(data.chatId);
+        const sender = chat.members.find(member => member.id === data.senderId);
 
         // iterate over the members of the chat
         for (const member of chat.members) {
@@ -139,7 +140,9 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
                 const memberSocketId = this.activeUsers.get(member.id);
 
                 if (memberSocketId) {
-                    this.server.to(memberSocketId).emit('typing', data);
+                    this.server.to(memberSocketId).emit('typing', {
+                        message: `${sender.name} is typing...`
+                    });
                 }
             }
         }
